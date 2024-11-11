@@ -1,40 +1,32 @@
 import SwiftUI
 
 struct HistoryView: View {
-    @State private var memoRecords: [MemoRecord] = [
-        MemoRecord(
-            audioURL: URL(string: "dummy0")!,
-            transcribedText: "这是最新录音的转写文本...",
-            polishedText: "这是最新录音润色后的文本，刚刚添加的...",
-            createdAt: Date()
-        ),
-        MemoRecord(
-            audioURL: URL(string: "dummy1")!,
-            transcribedText: "这是第一条录音的转写文本...",
-            polishedText: "这是第一条录音润色后的文本...",
-            createdAt: Date().addingTimeInterval(-3600)
-        ),
-        MemoRecord(
-            audioURL: URL(string: "dummy2")!,
-            transcribedText: "这是第二条录音的转写文本...",
-            polishedText: "这是第二条录音润色后的文本...",
-            createdAt: Date().addingTimeInterval(-7200)
-        )
-    ]
+    @EnvironmentObject var memoStore: MemoStore
     
     var body: some View {
         NavigationView {
             ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(memoRecords) { record in
-                        NavigationLink(destination: MemoDetailView(record: record)) {
-                            HistoryCard(record: record)
-                                .opacity(record.id == memoRecords[0].id ? 1 : 0.8)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                if memoStore.memos.isEmpty {
+                    VStack(spacing: 20) {
+                        Image(systemName: "doc.text.magnifyingglass")
+                            .font(.system(size: 50))
+                            .foregroundColor(.gray)
+                        Text("暂无录音记录")
+                            .foregroundColor(.gray)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.top, 100)
+                } else {
+                    LazyVStack(spacing: 16) {
+                        ForEach(memoStore.memos) { record in
+                            NavigationLink(destination: MemoDetailView(record: record)) {
+                                HistoryCard(record: record)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding()
                 }
-                .padding()
             }
             .navigationTitle("历史记录")
         }
@@ -50,10 +42,12 @@ struct HistoryCard: View {
             AudioPlayerView(audioURL: record.audioURL)
                 .frame(height: 40)
             
-            // 预览文本（显示润色后的文本前30个字符）
-            Text(record.polishedText.prefix(30) + "...")
-                .lineLimit(2)
-                .font(.body)
+            // 显示润色后的文本，限制为一行，设置文本颜色为黑色
+            Text(record.polishedText)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .font(.system(size: 16))
+                .foregroundColor(.black)
             
             // 时间戳
             Text(record.formattedDate)
@@ -70,4 +64,5 @@ struct HistoryCard: View {
 
 #Preview {
     HistoryView()
+        .environmentObject(MemoStore())
 } 

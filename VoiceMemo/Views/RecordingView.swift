@@ -20,132 +20,153 @@ struct RecordingView: View {
     @State private var transcriptionError: String?
     @State private var polishError: String?
     
+    @EnvironmentObject var memoStore: MemoStore
+    
+    @State private var showSaveSuccess = false
+    
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // 录音状态显示区域
-                if isRecording {
-                    VStack {
-                        RecordingTimerView(duration: recordingDuration)
-                        WaveformView()
+        ZStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // 录音状态显示区域
+                    if isRecording {
+                        VStack {
+                            RecordingTimerView(duration: recordingDuration)
+                            WaveformView()
+                        }
+                        .transition(.opacity)
                     }
-                    .transition(.opacity)
+                    
+                    // 录音文件显示区域
+                    if let audioURL = audioURL {
+                        AudioPlayerView(audioURL: audioURL)
+                            .frame(height: 60)
+                            .padding()
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(10)
+                            .transition(.scale.combined(with: .opacity))
+                        
+                        // 转写按钮
+                        Button(action: {
+                            Task {
+                                await startTranscribing()
+                            }
+                        }) {
+                            HStack {
+                                if isTranscribing {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .padding(.trailing, 5)
+                                }
+                                Image(systemName: "text.bubble")
+                                Text(isTranscribing ? "正在转写..." : "转换为文字")
+                            }
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                        }
+                        .disabled(isTranscribing)
+                        .transition(.scale)
+                        
+                        // 如果有错误，显示错误信息
+                        if let error = transcriptionError {
+                            Text(error)
+                                .foregroundColor(.red)
+                                .padding()
+                        }
+                    }
+                    
+                    // 转写文本显示区域
+                    if showTranscription {
+                        TranscriptionView(text: transcribedText)
+                            .transition(.opacity)
+                        
+                        // 润色按钮
+                        Button(action: {
+                            Task {
+                                await startPolishing()
+                            }
+                        }) {
+                            HStack {
+                                if isPolishing {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .padding(.trailing, 5)
+                                }
+                                Image(systemName: "wand.and.stars")
+                                Text(isPolishing ? "正在润色..." : "润色文本")
+                            }
+                            .padding()
+                            .background(transcriptionCompleted ? Color.purple : Color.gray)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                        }
+                        .disabled(!transcriptionCompleted || isPolishing)
+                        .transition(.scale)
+                        
+                        // 如果有错误，显示错误信息
+                        if let error = polishError {
+                            Text(error)
+                                .foregroundColor(.red)
+                                .padding()
+                        }
+                    }
+                    
+                    // 润色后文本显示区域
+                    if showPolishedText {
+                        PolishedTextView(text: polishedText)
+                            .transition(.opacity)
+                        
+                        Button(action: {
+                            saveToHistory()
+                        }) {
+                            HStack {
+                                Image(systemName: "square.and.arrow.down")
+                                Text("保存")
+                            }
+                            .padding()
+                            .background(polishingCompleted ? Color.green : Color.gray)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                        }
+                        .disabled(!polishingCompleted)
+                        .transition(.scale)
+                    }
+                    
+                    Spacer()
                 }
-                
-                // 录音文件显示区域
-                if let audioURL = audioURL {
-                    AudioPlayerView(audioURL: audioURL)
-                        .frame(height: 60)
+                .padding()
+                .animation(.spring(), value: isRecording)
+                .animation(.spring(), value: showTranscription)
+                .animation(.spring(), value: showPolishedText)
+            }
+            
+            // 底部录音按钮
+            .overlay(
+                RecordButton(isRecording: $isRecording) {
+                    handleRecordingButton()
+                }
+                .padding(.bottom, 30),
+                alignment: .bottom
+            )
+            
+            // 添加保存成功提示
+            if showSaveSuccess {
+                VStack {
+                    Text("已保存至历史记录")
+                        .foregroundColor(.white)
                         .padding()
-                        .background(Color.gray.opacity(0.1))
+                        .background(Color.black.opacity(0.7))
                         .cornerRadius(10)
-                        .transition(.scale.combined(with: .opacity))
-                    
-                    // 转写按钮
-                    Button(action: {
-                        Task {
-                            await startTranscribing()
-                        }
-                    }) {
-                        HStack {
-                            if isTranscribing {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .padding(.trailing, 5)
-                            }
-                            Image(systemName: "text.bubble")
-                            Text(isTranscribing ? "正在转写..." : "转换为文字")
-                        }
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                    }
-                    .disabled(isTranscribing)
-                    .transition(.scale)
-                    
-                    // 如果有错误，显示错误信息
-                    if let error = transcriptionError {
-                        Text(error)
-                            .foregroundColor(.red)
-                            .padding()
-                    }
                 }
-                
-                // 转写文本显示区域
-                if showTranscription {
-                    TranscriptionView(text: transcribedText)
-                        .transition(.opacity)
-                    
-                    // 润色按钮
-                    Button(action: {
-                        Task {
-                            await startPolishing()
-                        }
-                    }) {
-                        HStack {
-                            if isPolishing {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .padding(.trailing, 5)
-                            }
-                            Image(systemName: "wand.and.stars")
-                            Text(isPolishing ? "正在润色..." : "润色文本")
-                        }
-                        .padding()
-                        .background(transcriptionCompleted ? Color.purple : Color.gray)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                    }
-                    .disabled(!transcriptionCompleted || isPolishing)
-                    .transition(.scale)
-                    
-                    // 如果有错误，显示错误信息
-                    if let error = polishError {
-                        Text(error)
-                            .foregroundColor(.red)
-                            .padding()
-                    }
-                }
-                
-                // 润色后文本显示区域
-                if showPolishedText {
-                    PolishedTextView(text: polishedText)
-                        .transition(.opacity)
-                    
-                    // 保存按钮
-                    Button(action: {
-                        handleSave()
-                    }) {
-                        HStack {
-                            Image(systemName: "square.and.arrow.down")
-                            Text("保存")
-                        }
-                        .padding()
-                        .background(polishingCompleted ? Color.green : Color.gray)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                    }
-                    .disabled(!polishingCompleted)
-                    .transition(.scale)
-                }
-                
-                Spacer()
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(1)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(.top, 20)
             }
-            .padding()
-            .animation(.spring(), value: isRecording)
-            .animation(.spring(), value: showTranscription)
-            .animation(.spring(), value: showPolishedText)
         }
-        
-        // 底部录音按钮
-        .overlay(
-            RecordButton(isRecording: $isRecording) {
-                handleRecordingButton()
-            }
-            .padding(.bottom, 30),
-            alignment: .bottom
-        )
+        .animation(.easeInOut, value: showSaveSuccess)
     }
     
     // 模拟转写过程
@@ -243,11 +264,30 @@ struct RecordingView: View {
         audioURL = nil
     }
     
-    private func handleSave() {
-        // 重置所有状态
+    private func saveToHistory() {
+        guard let audioURL = audioURL,
+              !transcribedText.isEmpty,
+              !polishedText.isEmpty else {
+            return
+        }
+        
+        // 保存到MemoStore
+        memoStore.addMemo(audioURL: audioURL,
+                         transcribedText: transcribedText,
+                         polishedText: polishedText)
+        
+        // 显示保存成功提示
+        showSaveSuccess = true
+        
+        // 3秒后自动隐藏提示
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            withAnimation {
+                showSaveSuccess = false
+            }
+        }
+        
+        // 重置状态
         resetStates()
-        // 切换到历史标签页
-        tabSelection = 1
     }
 }
 
