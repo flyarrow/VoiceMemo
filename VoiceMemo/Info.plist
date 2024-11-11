@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 其他已有配置 -->
+    
+    <!-- 添加麦克风使用权限 -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>需要访问麦克风来录制语音备忘录</string>
+    
+    <!-- 可选：添加语音识别权限（如果后续需要用到系统语音识别） -->
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>需要语音识别权限来将语音转换为文字</string>
+</dict>
+</plist> 

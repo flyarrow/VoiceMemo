@@ -29,9 +29,22 @@
 		811406792CE1A6FD00AC1F5C /* VoiceMemoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceMemoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		818936AC2CE1BCD400F5555A /* Exceptions for "VoiceMemo" folder in "VoiceMemo" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8114065E2CE1A6FB00AC1F5C /* VoiceMemo */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		811406612CE1A6FB00AC1F5C /* VoiceMemo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				818936AC2CE1BCD400F5555A /* Exceptions for "VoiceMemo" folder in "VoiceMemo" target */,
+			);
 			path = VoiceMemo;
 			sourceTree = "<group>";
 		};
