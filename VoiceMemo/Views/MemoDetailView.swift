@@ -3,12 +3,13 @@ import SwiftUI
 struct MemoDetailView: View {
     let record: MemoRecord
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var memoStore: MemoStore
     
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 // 音频播放器
-                AudioPlayerView(audioURL: record.audioURL)
+                AudioPlayerView(audioURL: memoStore.getAudioURL(for: record.fileName))
                     .frame(height: 60)
                     .padding()
                     .background(Color.gray.opacity(0.1))

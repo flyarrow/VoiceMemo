@@ -9,19 +9,19 @@ class MemoStore: ObservableObject {
     }
     
     func addMemo(audioURL: URL, transcribedText: String, polishedText: String) {
-        // 获取永久存储的音频文件URL
-        let newAudioURL = getRecordingsDirectory().appendingPathComponent("\(UUID().uuidString).wav")
+        let fileName = "\(UUID().uuidString).wav"
+        let newAudioURL = getRecordingsDirectory().appendingPathComponent(fileName)
         
         do {
-            // 复制音频文件到永久存储位置
             try FileManager.default.copyItem(at: audioURL, to: newAudioURL)
             print("Audio file copied to: \(newAudioURL.path)")
             
-            // 使用永久存储的URL创建新记录
             let newMemo = MemoRecord(
-                audioURL: newAudioURL,
+                id: UUID(),
+                fileName: fileName,
                 transcribedText: transcribedText,
-                polishedText: polishedText
+                polishedText: polishedText,
+                createdAt: Date()
             )
             
             memos.insert(newMemo, at: 0)
@@ -33,26 +33,34 @@ class MemoStore: ObservableObject {
     }
     
     private func getRecordingsDirectory() -> URL {
-        // 直接使用应用支持目录
-        let containerURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let recordingsDirectory = containerURL.appendingPathComponent("recordings", isDirectory: true)
+        let containerURL = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)[0]
+        let recordingsDirectory = containerURL.appendingPathComponent("VoiceMemoRecordings", isDirectory: true)
         
-        // 确保recordings目录存在
         try? FileManager.default.createDirectory(
             at: recordingsDirectory,
             withIntermediateDirectories: true,
             attributes: nil
         )
         
+        let noSyncPath = recordingsDirectory.appendingPathComponent(".nosync")
+        if !FileManager.default.fileExists(atPath: noSyncPath.path) {
+            try? "".write(to: noSyncPath, atomically: true, encoding: .utf8)
+        }
+        
         return recordingsDirectory
+    }
+    
+    // 根据文件名获取完整的音频URL
+    func getAudioURL(for fileName: String) -> URL {
+        return getRecordingsDirectory().appendingPathComponent(fileName)
     }
     
     private func saveMemos() {
         do {
             let data = try JSONEncoder().encode(memos)
-            // 将数据保存到应用支持目录而不是UserDefaults
             let saveURL = getRecordingsDirectory().appendingPathComponent("memos.json")
             try data.write(to: saveURL)
+            print("Memos saved to: \(saveURL.path)")
         } catch {
             print("Failed to save memos: \(error)")
         }
@@ -62,7 +70,7 @@ class MemoStore: ObservableObject {
         let saveURL = getRecordingsDirectory().appendingPathComponent("memos.json")
         
         guard let data = try? Data(contentsOf: saveURL) else {
-            print("No saved memos found")
+            print("No saved memos found at: \(saveURL.path)")
             return
         }
         
@@ -71,12 +79,15 @@ class MemoStore: ObservableObject {
             
             // 验证每个音频文件是否存在
             memos = loadedMemos.filter { memo in
-                let exists = FileManager.default.fileExists(atPath: memo.audioURL.path)
+                let audioURL = getAudioURL(for: memo.fileName)
+                let exists = FileManager.default.fileExists(atPath: audioURL.path)
                 if !exists {
-                    print("Warning: Audio file not found at path: \(memo.audioURL.path)")
+                    print("Warning: Audio file not found at path: \(audioURL.path)")
                 }
                 return exists
             }
+            
+            print("Loaded \(memos.count) memos from: \(saveURL.path)")
             
         } catch {
             print("Failed to load memos: \(error)")

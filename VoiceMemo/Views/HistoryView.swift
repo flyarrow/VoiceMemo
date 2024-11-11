@@ -35,14 +35,15 @@ struct HistoryView: View {
 
 struct HistoryCard: View {
     let record: MemoRecord
+    @EnvironmentObject var memoStore: MemoStore
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // 音频播放器
-            AudioPlayerView(audioURL: record.audioURL)
+            AudioPlayerView(audioURL: memoStore.getAudioURL(for: record.fileName))
                 .frame(height: 40)
             
-            // 显示润色后的文本，限制为一行，设置文本颜色为黑色
+            // 显示润色后的文本
             Text(record.polishedText)
                 .lineLimit(1)
                 .truncationMode(.tail)
