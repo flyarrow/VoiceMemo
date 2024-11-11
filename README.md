@@ -17,10 +17,9 @@ VoiceMemo是一款iOS语音备忘录应用，它不仅能录制语音，还能�
 3、我的：这个界面的功能待定。
 
 ### 相关信息
-1, 录音转文字api文档: https://docs.siliconflow.cn/api-reference/audio/create-audio-transcriptions
-2、文字润色处理API文档：https://docs.siliconflow.cn/api-reference/chat-completions/chat-completions
-3• API key : sk-mphigntywusuncuheleoxjuxqyidhrxhrdfyglzznhvxqlil
-现在请作为产品经理，先写一个readme文档并保存在根目录，首先保存我上面写的所有提示词原文, 再阐述你对我的需求的理解，以及实现方式，下一步计划等
+1. 录音转文字api文档: https://docs.siliconflow.cn/api-reference/audio/create-audio-transcriptions
+2. 文字润色处理API文档：https://docs.siliconflow.cn/api-reference/chat-completions/chat-completions
+3. API配置请参考 Config/APIConfig.swift 文件
 
 ## 原始需求
 [这里是原始需求的完整复制，包含App功能说明、界面说明和相关信息...]
@@ -109,7 +108,7 @@ VoiceMemo是一款iOS语音备忘录应用，它不仅能录制语音，还能�
 ## API信息
 - 语音转文字API：https://docs.siliconflow.cn/api-reference/audio/create-audio-transcriptions
 - 文字润色API：https://docs.siliconflow.cn/api-reference/chat-completions/chat-completions
-- API Key: sk-mphigntywusuncuheleoxjuxqyidhrxhrdfyglzznhvxqlil
+- apikey 在 Config/APIConfig.swift 文件
 
 ## 注意事项
 1. API Key需要在正式环境中安全存储

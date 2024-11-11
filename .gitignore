@@ -1,0 +1,10 @@
+# Xcode
+.DS_Store
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# API Configuration
+VoiceMemo/Config/APIConfig.swift
+
+# 其他通用的 gitignore 规则 
