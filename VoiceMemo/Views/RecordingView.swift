@@ -17,6 +17,8 @@ struct RecordingView: View {
     @State private var isPolishing = false
     @State private var transcriptionCompleted = false
     @State private var polishingCompleted = false
+    @State private var transcriptionError: String?
+    @State private var polishError: String?
     
     var body: some View {
         ScrollView {
@@ -41,7 +43,9 @@ struct RecordingView: View {
                     
                     // 转写按钮
                     Button(action: {
-                        startTranscribing()
+                        Task {
+                            await startTranscribing()
+                        }
                     }) {
                         HStack {
                             if isTranscribing {
@@ -59,6 +63,13 @@ struct RecordingView: View {
                     }
                     .disabled(isTranscribing)
                     .transition(.scale)
+                    
+                    // 如果有错误，显示错误信息
+                    if let error = transcriptionError {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .padding()
+                    }
                 }
                 
                 // 转写文本显示区域
@@ -68,7 +79,9 @@ struct RecordingView: View {
                     
                     // 润色按钮
                     Button(action: {
-                        startPolishing()
+                        Task {
+                            await startPolishing()
+                        }
                     }) {
                         HStack {
                             if isPolishing {
@@ -86,6 +99,13 @@ struct RecordingView: View {
                     }
                     .disabled(!transcriptionCompleted || isPolishing)
                     .transition(.scale)
+                    
+                    // 如果有错误，显示错误信息
+                    if let error = polishError {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .padding()
+                    }
                 }
                 
                 // 润色后文本显示区域
@@ -129,28 +149,50 @@ struct RecordingView: View {
     }
     
     // 模拟转写过程
-    private func startTranscribing() {
-        isTranscribing = true
-        showTranscription = true
+    private func startTranscribing() async {
+        guard let audioURL = audioURL else { return }
         
-        // 模拟3秒后完成转写
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            transcribedText = "这是一段示例转写文本，展示转写功能完成后的效果。"
-            isTranscribing = false
-            transcriptionCompleted = true
+        isTranscribing = true
+        transcriptionError = nil
+        
+        do {
+            let text = try await TranscriptionService.transcribeAudio(fileURL: audioURL)
+            await MainActor.run {
+                transcribedText = text
+                showTranscription = true
+                isTranscribing = false
+                transcriptionCompleted = true
+            }
+        } catch {
+            await MainActor.run {
+                transcriptionError = "转写失败: \(error.localizedDescription)"
+                isTranscribing = false
+            }
+            print("转写错误: \(error)")
         }
     }
     
     // 模拟润色过程
-    private func startPolishing() {
-        isPolishing = true
-        showPolishedText = true
+    private func startPolishing() async {
+        guard !transcribedText.isEmpty else { return }
         
-        // 模拟3秒后完成润色
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            polishedText = "这是经过AI润色后的文本，更加流畅自然，没有错别字。"
-            isPolishing = false
-            polishingCompleted = true
+        isPolishing = true
+        polishError = nil
+        
+        do {
+            let polished = try await TextPolishService.polishText(transcribedText)
+            await MainActor.run {
+                polishedText = polished
+                showPolishedText = true
+                isPolishing = false
+                polishingCompleted = true
+            }
+        } catch {
+            await MainActor.run {
+                polishError = "润色失败: \(error.localizedDescription)"
+                isPolishing = false
+            }
+            print("润色错误: \(error)")
         }
     }
     

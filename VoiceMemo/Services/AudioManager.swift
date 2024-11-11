@@ -2,8 +2,8 @@ import Foundation
 import AVFoundation
 
 class AudioManager: NSObject, ObservableObject {
+    var audioRecorder: AVAudioRecorder?
     var audioPlayer: AVAudioPlayer?
-    internal var audioRecorder: AVAudioRecorder?
     private var recordingSession: AVAudioSession = .sharedInstance()
     
     @Published var isRecording = false
@@ -27,19 +27,26 @@ class AudioManager: NSObject, ObservableObject {
     }
     
     func startRecording() -> URL? {
-        let audioFilename = getDocumentsDirectory().appendingPathComponent("\(Date().timeIntervalSince1970).m4a")
+        let audioFilename = getDocumentsDirectory().appendingPathComponent("\(Date().timeIntervalSince1970).wav")
         print("Will save recording to: \(audioFilename.path)")
         
-        let settings = [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 44100,
-            AVNumberOfChannelsKey: 2,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+        let settings: [String: Any] = [
+            AVFormatIDKey: Int(kAudioFormatLinearPCM),
+            AVSampleRateKey: 16000.0,
+            AVNumberOfChannelsKey: 1,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false,
+            AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue
         ]
         
         do {
+            try recordingSession.setCategory(.playAndRecord, mode: .default)
+            try recordingSession.setActive(true)
+            
             audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)
             audioRecorder?.delegate = self
+            audioRecorder?.prepareToRecord()
             audioRecorder?.record()
             isRecording = true
             return audioFilename
@@ -57,27 +64,37 @@ class AudioManager: NSObject, ObservableObject {
     
     func startPlaying(url: URL) {
         do {
+            stopPlaying()
+            
+            try recordingSession.setCategory(.playback)
+            try recordingSession.setActive(true)
+            
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer?.delegate = self
+            audioPlayer?.prepareToPlay()
             audioPlayer?.play()
             isPlaying = true
             duration = audioPlayer?.duration ?? 0
+            
             startPlaybackTimer()
+            
+            print("Started playing audio from: \(url.path)")
         } catch {
             print("Could not start playing: \(error.localizedDescription)")
         }
     }
     
-    func stopPlaying() {
-        audioPlayer?.stop()
-        isPlaying = false
-        currentTime = 0
-        stopPlaybackTimer()
-    }
-    
     func pausePlaying() {
         audioPlayer?.pause()
         isPlaying = false
+        stopPlaybackTimer()
+    }
+    
+    func stopPlaying() {
+        audioPlayer?.stop()
+        audioPlayer = nil
+        isPlaying = false
+        currentTime = 0
         stopPlaybackTimer()
     }
     
@@ -111,5 +128,6 @@ extension AudioManager: AVAudioPlayerDelegate {
         isPlaying = false
         currentTime = 0
         stopPlaybackTimer()
+        print("Audio playback finished, success: \(flag)")
     }
 } 
