@@ -93,4 +93,41 @@ class MemoStore: ObservableObject {
             print("Failed to load memos: \(error)")
         }
     }
+    
+    // 添加获取文件大小的方法
+    func getAudioFileSize(for fileName: String) -> String {
+        let audioURL = getRecordingsDirectory().appendingPathComponent(fileName)
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: audioURL.path)
+            let size = attributes[.size] as? Int64 ?? 0
+            
+            // 转换为合适的单位
+            if size < 1024 {
+                return "\(size)B"
+            } else if size < 1024 * 1024 {
+                let kb = Double(size) / 1024.0
+                return String(format: "%.1fKB", kb)
+            } else {
+                let mb = Double(size) / (1024.0 * 1024.0)
+                return String(format: "%.1fMB", mb)
+            }
+        } catch {
+            print("Failed to get file size: \(error)")
+            return "未知大小"
+        }
+    }
+    
+    func deleteMemo(_ memo: MemoRecord) {
+        // 删除音频文件
+        let audioURL = getAudioURL(for: memo.fileName)
+        try? FileManager.default.removeItem(at: audioURL)
+        
+        // 从数组中移除记录
+        memos.removeAll { $0.id == memo.id }
+        
+        // 保存更新后的记录
+        saveMemos()
+        
+        print("Deleted memo: \(memo.id)")
+    }
 } 

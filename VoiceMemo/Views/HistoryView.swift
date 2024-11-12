@@ -50,10 +50,14 @@ struct HistoryCard: View {
                 .font(.system(size: 16))
                 .foregroundColor(.black)
             
-            // 时间戳
-            Text(record.formattedDate)
-                .font(.caption)
-                .foregroundColor(.gray)
+            // 底部信息栏：时间和文件大小
+            HStack {
+                Text(record.formattedDate)
+                Spacer()
+                Text(memoStore.getAudioFileSize(for: record.fileName))
+            }
+            .font(.caption)
+            .foregroundColor(.gray)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
