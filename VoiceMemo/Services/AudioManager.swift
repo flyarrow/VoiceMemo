@@ -10,6 +10,7 @@ class AudioManager: NSObject, ObservableObject {
     @Published var isPlaying = false
     @Published var currentTime: TimeInterval = 0
     @Published var duration: TimeInterval = 0
+    @Published var remainingTime: TimeInterval = 0
     private var timer: Timer?
     
     override init() {
@@ -62,6 +63,16 @@ class AudioManager: NSObject, ObservableObject {
         print("Recording stopped")
     }
     
+    func loadAudioDuration(from url: URL) {
+        do {
+            let player = try AVAudioPlayer(contentsOf: url)
+            duration = player.duration
+            remainingTime = duration
+        } catch {
+            print("Could not load audio duration: \(error)")
+        }
+    }
+    
     func startPlaying(url: URL) {
         do {
             stopPlaying()
@@ -75,6 +86,7 @@ class AudioManager: NSObject, ObservableObject {
             audioPlayer?.play()
             isPlaying = true
             duration = audioPlayer?.duration ?? 0
+            remainingTime = duration
             
             startPlaybackTimer()
             
@@ -103,6 +115,7 @@ class AudioManager: NSObject, ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let player = self.audioPlayer else { return }
             self.currentTime = player.currentTime
+            self.remainingTime = player.duration - player.currentTime
         }
     }
     
@@ -127,6 +140,7 @@ extension AudioManager: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         isPlaying = false
         currentTime = 0
+        remainingTime = duration
         stopPlaybackTimer()
         print("Audio playback finished, success: \(flag)")
     }

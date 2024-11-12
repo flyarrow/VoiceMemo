@@ -32,24 +32,25 @@ struct AudioPlayerView: View {
                     
                     Rectangle()
                         .fill(Color.blue)
-                        .frame(width: geometry.size.width * CGFloat(progress), height: 4)
+                        .frame(width: geometry.size.width * CGFloat(audioManager.currentTime / max(audioManager.duration, 1)), height: 4)
                 }
             }
             .frame(height: 4)
             
-            // 时间显示
-            Text(formatTime(audioManager.currentTime))
+            // 显示剩余时间
+            Text(formatTime(isPlaying ? audioManager.remainingTime : audioManager.duration))
                 .font(.caption)
                 .foregroundColor(.gray)
                 .frame(width: 50)
         }
         .onAppear {
             setupAudioPlayer()
+            // 加载音频时获取时长
+            audioManager.loadAudioDuration(from: audioURL)
         }
-        .onReceive(audioManager.$currentTime) { time in
-            if let player = audioManager.audioPlayer {
-                progress = time / player.duration
-            }
+        .onReceive(audioManager.$currentTime) { _ in
+            // 进度更新使用currentTime/duration的比例
+            progress = audioManager.currentTime / max(audioManager.duration, 1)
         }
         .onReceive(audioManager.$isPlaying) { playing in
             isPlaying = playing
