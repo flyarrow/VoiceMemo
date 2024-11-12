@@ -11,7 +11,9 @@ class AudioManager: NSObject, ObservableObject {
     @Published var currentTime: TimeInterval = 0
     @Published var duration: TimeInterval = 0
     @Published var remainingTime: TimeInterval = 0
+    @Published var currentVolume: Float = 0.0
     private var timer: Timer?
+    private var volumeTimer: Timer?
     
     override init() {
         super.init()
@@ -38,7 +40,9 @@ class AudioManager: NSObject, ObservableObject {
             AVLinearPCMBitDepthKey: 16,
             AVLinearPCMIsFloatKey: false,
             AVLinearPCMIsBigEndianKey: false,
-            AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue
+            AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue,
+            AVEncoderBitRateKey: 16000,
+            AVSampleRateConverterAudioQualityKey: AVAudioQuality.max.rawValue
         ]
         
         do {
@@ -47,9 +51,13 @@ class AudioManager: NSObject, ObservableObject {
             
             audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)
             audioRecorder?.delegate = self
+            audioRecorder?.isMeteringEnabled = true
             audioRecorder?.prepareToRecord()
             audioRecorder?.record()
             isRecording = true
+            
+            startVolumeMonitoring()
+            
             return audioFilename
         } catch {
             print("Could not start recording: \(error.localizedDescription)")
@@ -58,6 +66,7 @@ class AudioManager: NSObject, ObservableObject {
     }
     
     func stopRecording() {
+        stopVolumeMonitoring()
         audioRecorder?.stop()
         isRecording = false
         print("Recording stopped")
@@ -126,6 +135,33 @@ class AudioManager: NSObject, ObservableObject {
     
     private func getDocumentsDirectory() -> URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    }
+    
+    private func startVolumeMonitoring() {
+        stopVolumeMonitoring()
+        volumeTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            self?.updateVolume()
+        }
+    }
+    
+    private func stopVolumeMonitoring() {
+        volumeTimer?.invalidate()
+        volumeTimer = nil
+        currentVolume = 0.0
+    }
+    
+    private func updateVolume() {
+        guard let recorder = audioRecorder, recorder.isRecording else { return }
+        recorder.updateMeters()
+        
+        let averagePower = recorder.averagePower(forChannel: 0)
+        
+        let minDb: Float = -60.0
+        let normalizedValue = max(0.0, (averagePower - minDb) / abs(minDb))
+        
+        DispatchQueue.main.async {
+            self.currentVolume = normalizedValue
+        }
     }
 }
 

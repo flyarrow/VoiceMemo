@@ -1,23 +1,38 @@
 import SwiftUI
 
 struct WaveformView: View {
-    @State private var waveform: [CGFloat] = Array(repeating: 0.2, count: 30)
-    let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    @ObservedObject var audioManager: AudioManager
+    private let numberOfBars = 30
     
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(waveform.indices, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.red)
-                    .frame(width: 3, height: 20 + waveform[index] * 40)
-                    .animation(.spring(dampingFraction: 0.5), value: waveform[index])
+        HStack(spacing: 2) {
+            ForEach(0..<numberOfBars, id: \.self) { index in
+                WaveformBar(volume: audioManager.currentVolume)
             }
         }
-        .onReceive(timer) { _ in
-            // 模拟音量波动
-            for i in waveform.indices {
-                waveform[i] = CGFloat.random(in: 0.1...1.0)
+        .frame(height: 100)
+        .padding(.vertical, 20)
+    }
+}
+
+struct WaveformBar: View {
+    let volume: Float
+    @State private var height: CGFloat = 5
+    
+    var body: some View {
+        RoundedRectangle(cornerRadius: 1)
+            .fill(Color.blue)
+            .frame(width: 3, height: height)
+            .onAppear {
+                height = CGFloat.random(in: 5...15)
             }
-        }
+            .onChange(of: volume) { newValue in
+                withAnimation(.spring(dampingFraction: 0.5, blendDuration: 0.1)) {
+                    let baseHeight: CGFloat = 5
+                    let maxHeight: CGFloat = 80
+                    let randomFactor = CGFloat.random(in: 0.8...1.2)
+                    height = baseHeight + (maxHeight - baseHeight) * CGFloat(newValue) * randomFactor
+                }
+            }
     }
 } 

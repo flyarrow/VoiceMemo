@@ -32,7 +32,7 @@ struct RecordingView: View {
                     if isRecording {
                         VStack {
                             RecordingTimerView(duration: recordingDuration)
-                            WaveformView()
+                            WaveformView(audioManager: audioManager)
                         }
                         .transition(.opacity)
                     }
@@ -59,7 +59,7 @@ struct RecordingView: View {
                                         .padding(.trailing, 5)
                                 }
                                 Image(systemName: "text.bubble")
-                                Text(isTranscribing ? "正在转写..." : "转换为文字")
+                                Text(isTranscribing ? "正在转写..." : "转录文字")
                             }
                             .padding()
                             .background(Color.blue)
@@ -140,6 +140,10 @@ struct RecordingView: View {
                 .animation(.spring(), value: isRecording)
                 .animation(.spring(), value: showTranscription)
                 .animation(.spring(), value: showPolishedText)
+            }
+            .safeAreaInset(edge: .bottom) {
+                Color.clear
+                    .frame(height: 100)
             }
             
             // 底部录音按钮
